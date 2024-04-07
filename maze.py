@@ -4,12 +4,16 @@ from collections import deque
 from random import choice 
 
 RES = WIDTH, HEIGHT = 1202, 902
-TILE = 50
+TILE = 100
 cols, rows = WIDTH // TILE, HEIGHT // TILE
 
 pygame.init()
 sc = pygame.display.set_mode(RES)
 clock = pygame.time.Clock()
+
+#USER CHARACTER
+x, y = WIDTH // 2, HEIGHT // 2
+velocity = 5
 
 class Cell:
     def __init__(self, x, y):
@@ -82,7 +86,16 @@ while True:
     sc.fill((0, 0, 0))
     for event in pygame.event.get():
         if event.type == QUIT:
-            exit()
+            runnning = False
+        elif event.type == KEYDOWN:
+            if event.key == K_LEFT:
+                x -= velocity
+            elif event.key == K_RIGHT:
+                x += velocity
+            elif event.key == K_UP:
+                y -= velocity
+            elif event.key == K_DOWN:
+                y += velocity
             
     [cell.draw() for cell in grid_cells]
     current_cell.visited = True
@@ -99,8 +112,10 @@ while True:
         current_cell = next_cell
     elif stack:
         current_cell = stack.pop()
+        
+    pygame.draw.rect(sc, pygame.Color('green'), (x, y, TILE, TILE))
     
     pygame.display.flip()
     clock.tick(30)
 
-
+pygame.quit()
