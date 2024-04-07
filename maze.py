@@ -1,61 +1,55 @@
 import pygame
-from pygame.locals import *
-from collections import deque
-from random import choice 
+from random import choice, randrange
 
 RES = WIDTH, HEIGHT = 1202, 902
 TILE = 100
 cols, rows = WIDTH // TILE, HEIGHT // TILE
 
-pygame.init()
-sc = pygame.display.set_mode(RES)
-clock = pygame.time.Clock()
-
-#USER CHARACTER
-x, y = 0,0
-velocity = 5
-speed_increase = 0.5
-max_velocity = 20
-
 class Cell:
     def __init__(self, x, y):
-        self.x = x
-        self.y = y
+        self.x, self.y = x, y
+        self.walls = {'top': True, 'right': True, 'bottom': True, 'left': True}
         self.visited = False
-        self.walls = {'top': True, 'right':True, 'bottom': True, 'left': True}
-    
-    def draw_current_cell(self):
+        self.thickness = 4
+
+    def draw(self, sc):
         x, y = self.x * TILE, self.y * TILE
-        pygame.draw.rect(sc, pygame.Color('red'), (x+2, y+2, TILE-2, TILE-2))
-        
-    def draw(self):
-        x, y = self.x * TILE, self.y * TILE
-        if self.visited:
-            pygame.draw.rect(sc, pygame.Color('black'), (x, y, TILE, TILE))
+
         if self.walls['top']:
-            pygame.draw.line(sc, pygame.Color('white'), (x, y), (x + TILE, y), 2)
+            pygame.draw.line(sc, pygame.Color('darkorange'), (x, y), (x + TILE, y), self.thickness)
         if self.walls['right']:
-            pygame.draw.line(sc, pygame.Color('white'), (x + TILE, y), (x + TILE, y + TILE), 2)
+            pygame.draw.line(sc, pygame.Color('darkorange'), (x + TILE, y), (x + TILE, y + TILE), self.thickness)
         if self.walls['bottom']:
-            pygame.draw.line(sc, pygame.Color('white'), (x + TILE, y + TILE), (x, y + TILE), 2)
+            pygame.draw.line(sc, pygame.Color('darkorange'), (x + TILE, y + TILE), (x , y + TILE), self.thickness)
         if self.walls['left']:
-            pygame.draw.line(sc, pygame.Color('white'), (x, y + TILE), (x, y), 2)
+            pygame.draw.line(sc, pygame.Color('darkorange'), (x, y + TILE), (x, y), self.thickness)
             
-    def has_wall(self, direction):
-        return self.walls[direction]
-            
+    def get_rects(self):
+        rects = []
+        x, y = self.x * TILE, self.y * TILE
+        if self.walls['top']:
+            rects.append(pygame.Rect( (x, y), (TILE, self.thickness) ))
+        if self.walls['right']:
+            rects.append(pygame.Rect( (x + TILE, y), (self.thickness, TILE) ))
+        if self.walls['bottom']:
+            rects.append(pygame.Rect( (x, y + TILE), (TILE , self.thickness) ))
+        if self.walls['left']:
+            rects.append(pygame.Rect( (x, y), (self.thickness, TILE) ))
+        return rects
+
     def check_cell(self, x, y):
         find_index = lambda x, y: x + y * cols
-        if x < 0 or x > cols-1 or y < 0 or y > rows-1:
+        if x < 0 or x > cols - 1 or y < 0 or y > rows - 1:
             return False
-        return grid_cells[find_index(x, y)]
+        return self.grid_cells[find_index(x, y)]
     
-    def check_neighbors(self):
+    def check_neighbors(self, grid_cells):
+        self.grid_cells = grid_cells
         neighbors = []
-        top = self.check_cell(self.x, self.y-1)
-        right = self.check_cell(self.x+1, self.y)
-        bottom = self.check_cell(self.x, self.y+1)
-        left = self.check_cell(self.x-1, self.y)
+        top = self.check_cell(self.x, self.y - 1)
+        right = self.check_cell(self.x + 1, self.y)
+        bottom = self.check_cell(self.x, self.y + 1)
+        left = self.check_cell(self.x - 1, self.y)
         if top and not top.visited:
             neighbors.append(top)
         if right and not right.visited:
@@ -81,84 +75,22 @@ def remove_walls(current, next):
     elif dy == -1:
         current.walls['bottom'] = False
         next.walls['top'] = False
-        
-def move_character(x,y,dx,dy,cells):
-    new_x = x + dx
-    new_y = y + dy
-    cell_x, cell_y = int(new_x // TILE), int(new_y // TILE)
     
-    if 0 <= cell_x < cols and 0 <= cell_y < rows:
-        current_cell = cells[cell_y * cols + cell_x]
-    
-        if dx > 0 and current_cell.has_wall('right'):
-            new_x = cell_x * TILE
-        elif dx < 0 and current_cell.has_wall('left'):
-            new_x = (cell_x + 1) * TILE
-        if dy > 0 and current_cell.has_wall('bottom'):
-            new_y = cell_y * TILE
-        elif dy < 0 and current_cell.has_wall('top'):
-            new_y = (cell_y + 1) * TILE
-        
-    else:
-        new_x, new_y = x, y
-    
-    return new_x, new_y
+def generate_maze():
+    grid_cells = [Cell(col, row) for row in range(rows) for col in range(cols)]
+    current_cell = grid_cells[0]
+    array = []
+    break_count = 1
 
-grid_cells = [Cell(col, row) for row in range(rows) for col in range(cols)]
-current_cell = grid_cells[0]
-stack = []
-colors, color = [], 40
-
-
-running = True
-keys_held = {K_LEFT: False, K_RIGHT: False, K_UP: False, K_DOWN: False}
-
-while True:
-    sc.fill((0, 0, 0))
-    for event in pygame.event.get():
-        if event.type == QUIT:
-            runnning = False
-        elif event.type == KEYDOWN:
-            keys_held[event.key] = True
-        elif event.type == KEYUP:
-            keys_held[event.key] = False
-            velocity = 5
-
-    if any(keys_held.values()):
-        velocity = min(velocity + speed_increase, max_velocity)
-    else:
-        velocity = 5
-        
-    dx, dy = 0,0
-    if keys_held[K_LEFT]:
-        dx = -velocity
-    elif keys_held[K_RIGHT]:
-        dx = velocity  
-    if keys_held[K_UP]:
-        dy = -velocity
-    elif keys_held[K_DOWN]:
-        dy = velocity
-        
-    x, y = move_character(x, y, dx, dy, grid_cells)
-
-    [cell.draw() for cell in grid_cells]
-    current_cell.visited = True
-    current_cell.draw_current_cell()
-    [pygame.draw.rect(sc, colors[i], (cell.x * TILE+5, cell.y * TILE+5, TILE-10, TILE-10), border_radius=12) for i, cell in enumerate(stack)]
-    
-    next_cell = current_cell.check_neighbors()
-    if next_cell:
-        next_cell.visited = True
-        stack.append(current_cell)
-        colors.append((min(color, 255), 10, 100))
-        color += 1
-        remove_walls(current_cell, next_cell)
-        current_cell = next_cell
-    elif stack:
-        current_cell = stack.pop()
-        
-    pygame.draw.rect(sc, pygame.Color('green'), (x, y, TILE, TILE))
-    
-    pygame.display.flip()
-    clock.tick(30)
-
+    while break_count != len(grid_cells):
+        current_cell.visited = True
+        next_cell = current_cell.check_neighbors(grid_cells)
+        if next_cell:
+            next_cell.visited = True
+            break_count += 1
+            array.append(current_cell)
+            remove_walls(current_cell, next_cell)
+            current_cell = next_cell
+        elif array:
+            current_cell = array.pop()
+    return grid_cells
