@@ -12,8 +12,10 @@ sc = pygame.display.set_mode(RES)
 clock = pygame.time.Clock()
 
 #USER CHARACTER
-x, y = WIDTH // 2, HEIGHT // 2
+x, y = 0,0
 velocity = 5
+speed_increase = 0.5
+max_velocity = 20
 
 class Cell:
     def __init__(self, x, y):
@@ -38,6 +40,9 @@ class Cell:
             pygame.draw.line(sc, pygame.Color('white'), (x + TILE, y + TILE), (x, y + TILE), 2)
         if self.walls['left']:
             pygame.draw.line(sc, pygame.Color('white'), (x, y + TILE), (x, y), 2)
+            
+    def has_wall(self, direction):
+        return self.walls[direction]
             
     def check_cell(self, x, y):
         find_index = lambda x, y: x + y * cols
@@ -76,11 +81,37 @@ def remove_walls(current, next):
     elif dy == -1:
         current.walls['bottom'] = False
         next.walls['top'] = False
+        
+def move_character(x,y,dx,dy,cells):
+    new_x = x + dx
+    new_y = y + dy
+    cell_x, cell_y = int(new_x // TILE), int(new_y // TILE)
+    
+    if 0 <= cell_x < cols and 0 <= cell_y < rows:
+        current_cell = cells[cell_y * cols + cell_x]
+    
+        if dx > 0 and current_cell.has_wall('right'):
+            new_x = cell_x * TILE
+        elif dx < 0 and current_cell.has_wall('left'):
+            new_x = (cell_x + 1) * TILE
+        if dy > 0 and current_cell.has_wall('bottom'):
+            new_y = cell_y * TILE
+        elif dy < 0 and current_cell.has_wall('top'):
+            new_y = (cell_y + 1) * TILE
+        
+    else:
+        new_x, new_y = x, y
+    
+    return new_x, new_y
 
 grid_cells = [Cell(col, row) for row in range(rows) for col in range(cols)]
 current_cell = grid_cells[0]
 stack = []
 colors, color = [], 40
+
+
+running = True
+keys_held = {K_LEFT: False, K_RIGHT: False, K_UP: False, K_DOWN: False}
 
 while True:
     sc.fill((0, 0, 0))
@@ -88,15 +119,28 @@ while True:
         if event.type == QUIT:
             runnning = False
         elif event.type == KEYDOWN:
-            if event.key == K_LEFT:
-                x -= velocity
-            elif event.key == K_RIGHT:
-                x += velocity
-            elif event.key == K_UP:
-                y -= velocity
-            elif event.key == K_DOWN:
-                y += velocity
-            
+            keys_held[event.key] = True
+        elif event.type == KEYUP:
+            keys_held[event.key] = False
+            velocity = 5
+
+    if any(keys_held.values()):
+        velocity = min(velocity + speed_increase, max_velocity)
+    else:
+        velocity = 5
+        
+    dx, dy = 0,0
+    if keys_held[K_LEFT]:
+        dx = -velocity
+    elif keys_held[K_RIGHT]:
+        dx = velocity  
+    if keys_held[K_UP]:
+        dy = -velocity
+    elif keys_held[K_DOWN]:
+        dy = velocity
+        
+    x, y = move_character(x, y, dx, dy, grid_cells)
+
     [cell.draw() for cell in grid_cells]
     current_cell.visited = True
     current_cell.draw_current_cell()
@@ -118,4 +162,3 @@ while True:
     pygame.display.flip()
     clock.tick(30)
 
-pygame.quit()
