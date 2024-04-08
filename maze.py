@@ -16,13 +16,13 @@ class Cell:
         x, y = self.x * TILE, self.y * TILE
 
         if self.walls['top']:
-            pygame.draw.line(sc, pygame.Color('darkorange'), (x, y), (x + TILE, y), self.thickness)
+            pygame.draw.line(sc, pygame.Color('white'), (x, y), (x + TILE, y), self.thickness)
         if self.walls['right']:
-            pygame.draw.line(sc, pygame.Color('darkorange'), (x + TILE, y), (x + TILE, y + TILE), self.thickness)
+            pygame.draw.line(sc, pygame.Color('white'), (x + TILE, y), (x + TILE, y + TILE), self.thickness)
         if self.walls['bottom']:
-            pygame.draw.line(sc, pygame.Color('darkorange'), (x + TILE, y + TILE), (x , y + TILE), self.thickness)
+            pygame.draw.line(sc, pygame.Color('white'), (x + TILE, y + TILE), (x , y + TILE), self.thickness)
         if self.walls['left']:
-            pygame.draw.line(sc, pygame.Color('darkorange'), (x, y + TILE), (x, y), self.thickness)
+            pygame.draw.line(sc, pygame.Color('white'), (x, y + TILE), (x, y), self.thickness)
             
     def get_rects(self):
         rects = []
