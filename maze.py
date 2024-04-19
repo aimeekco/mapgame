@@ -4,6 +4,8 @@ from random import choice, randrange
 RES = WIDTH, HEIGHT = 1000, 800
 TILE = 100
 cols, rows = WIDTH // TILE, HEIGHT // TILE
+sc = pygame.display.set_mode(RES)
+clock = pygame.time.Clock()
 
 class Cell:
     def __init__(self, x, y):
@@ -60,6 +62,11 @@ class Cell:
             neighbors.append(left)
         return choice(neighbors) if neighbors else False
     
+    def draw_current_cell(self):
+        x, y = self.x * TILE, self.y * TILE
+        pygame.draw.rect(sc, pygame.Color('red'), (x + 2, y + 2, TILE + 2, TILE + 2))
+
+    
 def remove_walls(current, next):
     dx = current.x - next.x
     if dx == 1:
@@ -79,18 +86,27 @@ def remove_walls(current, next):
 def generate_maze():
     grid_cells = [Cell(col, row) for row in range(rows) for col in range(cols)]
     current_cell = grid_cells[0]
-    array = []
-    break_count = 1
+    stack = [current_cell]
+    current_cell.visited = True
 
-    while break_count != len(grid_cells):
-        current_cell.visited = True
+    while stack:
+        sc.fill(pygame.Color('black'))
+                
+        # [cell.draw(sc) for cell in grid_cells]
+        # current_cell.visited = True
+        # current_cell.draw_current_cell()
+        
         next_cell = current_cell.check_neighbors(grid_cells)
         if next_cell:
             next_cell.visited = True
-            break_count += 1
-            array.append(current_cell)
+            stack.append(current_cell)
             remove_walls(current_cell, next_cell)
             current_cell = next_cell
-        elif array:
-            current_cell = array.pop()
+        elif stack:
+            current_cell = stack.pop()
+        
+        # pygame.display.flip()
+        # clock.tick(10)
+        
     return grid_cells
+    

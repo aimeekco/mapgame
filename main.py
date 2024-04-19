@@ -24,9 +24,11 @@ def is_collide(x, y):
 
 
 def eat_food():
+    global score
     for food in food_list:
         if player_rect.collidepoint(food.rect.center):
             food.set_pos()
+            score += 1
             return True
     return False
 
@@ -37,25 +39,7 @@ def is_game_over():
         pygame.time.wait(700)
         player_rect.center = TILE // 2, TILE // 2
         [food.set_pos() for food in food_list]
-        set_record(record, score)
-        record = get_record()
         time, score, FPS = 60, 0, 60
-
-
-def get_record():
-    try:
-        with open('record') as f:
-            return f.readline()
-    except FileNotFoundError:
-        with open('record', 'w') as f:
-            f.write('0')
-            return 0
-
-
-def set_record(record, score):
-    rec = max(int(record), score)
-    with open('record', 'w') as f:
-        f.write(str(rec))
 
 
 FPS = 60
@@ -63,10 +47,6 @@ pygame.init()
 game_surface = pygame.Surface(RES)
 surface = pygame.display.set_mode((WIDTH + 300, HEIGHT))
 clock = pygame.time.Clock()
-
-# images
-bg_game = pygame.image.load('bg_1.jpg').convert()
-bg = pygame.image.load('bg_main.jpg').convert()
 
 # get maze
 maze = generate_maze()
@@ -77,8 +57,8 @@ player_img = pygame.image.load('0.png').convert_alpha()
 player_img = pygame.transform.scale(player_img, (TILE - 2 * maze[0].thickness, TILE - 2 * maze[0].thickness))
 player_rect = player_img.get_rect()
 player_rect.center = TILE // 2, TILE // 2
-directions = {'a': (-player_speed, 0), 'd': (player_speed, 0), 'w': (0, -player_speed), 's': (0, player_speed)}
-keys = {'a': pygame.K_a, 'd': pygame.K_d, 'w': pygame.K_w, 's': pygame.K_s}
+directions = {'left': (-player_speed, 0), 'right': (player_speed, 0), 'up': (0, -player_speed), 'down': (0, player_speed)}
+keys = {'left': pygame.K_LEFT, 'right': pygame.K_RIGHT, 'up': pygame.K_UP, 'down': pygame.K_DOWN}
 direction = (0, 0)
 
 # food settings
@@ -91,22 +71,27 @@ walls_collide_list = sum([cell.get_rects() for cell in maze], [])
 pygame.time.set_timer(pygame.USEREVENT, 1000)
 time = 60
 score = 0
-record = get_record()
 
 # fonts
 font = pygame.font.SysFont('Impact', 150)
 text_font = pygame.font.SysFont('Impact', 80)
 
+
 while True:
-    surface.blit(bg, (WIDTH, 0))
-    surface.blit(game_surface, (0, 0))
-    game_surface.blit(bg_game, (0, 0))
+    game_surface.fill((0,0,0))
+    surface.fill(pygame.Color('black'), (WIDTH, 0, 300, HEIGHT))
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
+            pygame.quit()
             exit()
         if event.type == pygame.USEREVENT:
             time -= 1
+            if time <= 0:
+                is_game_over()
+            
+    for cell in maze:
+        cell.draw(game_surface)
 
     # controls and movement
     pressed_key = pygame.key.get_pressed()
@@ -118,7 +103,8 @@ while True:
         player_rect.move_ip(direction)
 
     # draw maze
-    [cell.draw(game_surface) for cell in maze]
+    # [cell.draw(game_surface) for cell in maze]
+    generate_maze()
 
     # gameplay
     if eat_food():
@@ -133,13 +119,16 @@ while True:
     [food.draw() for food in food_list]
 
     # draw stats
-    surface.blit(text_font.render('TIME', True, pygame.Color('cyan'), True), (WIDTH + 70, 30))
-    surface.blit(font.render(f'{time}', True, pygame.Color('cyan')), (WIDTH + 70, 130))
-    surface.blit(text_font.render('score:', True, pygame.Color('forestgreen'), True), (WIDTH + 50, 350))
-    surface.blit(font.render(f'{score}', True, pygame.Color('forestgreen')), (WIDTH + 70, 430))
-    surface.blit(text_font.render('record:', True, pygame.Color('magenta'), True), (WIDTH + 30, 620))
-    surface.blit(font.render(f'{record}', True, pygame.Color('magenta')), (WIDTH + 70, 700))
+    time_text = text_font.render('Time', True, pygame.Color('white'))
+    time_value = font.render(f'{time}', True, pygame.Color('white'))
+    score_text = text_font.render('Score:', True, pygame.Color('white'))
+    score_value = font.render(f'{score}', True, pygame.Color('white'))
 
-    # print(clock.get_fps())
+    surface.blit(time_text, (WIDTH + 70, 30))
+    surface.blit(time_value, (WIDTH + 70, 130))
+    surface.blit(score_text, (WIDTH + 50, 350))
+    surface.blit(score_value, (WIDTH + 70, 430))
+
+    surface.blit(game_surface, (0, 0))
     pygame.display.flip()
     clock.tick(FPS)
