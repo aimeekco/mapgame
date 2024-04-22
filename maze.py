@@ -91,11 +91,6 @@ def generate_maze():
 
     while stack:
         sc.fill(pygame.Color('black'))
-                
-        # [cell.draw(sc) for cell in grid_cells]
-        # current_cell.visited = True
-        # current_cell.draw_current_cell()
-        
         next_cell = current_cell.check_neighbors(grid_cells)
         if next_cell:
             next_cell.visited = True
@@ -104,9 +99,5 @@ def generate_maze():
             current_cell = next_cell
         elif stack:
             current_cell = stack.pop()
-        
-        # pygame.display.flip()
-        # clock.tick(10)
-        
     return grid_cells
     

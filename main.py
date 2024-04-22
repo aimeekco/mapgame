@@ -76,7 +76,6 @@ score = 0
 font = pygame.font.SysFont('Impact', 150)
 text_font = pygame.font.SysFont('Impact', 80)
 
-
 while True:
     game_surface.fill((0,0,0))
     surface.fill(pygame.Color('black'), (WIDTH, 0, 300, HEIGHT))
